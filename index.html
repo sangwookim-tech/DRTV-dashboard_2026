@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<script>
+  // 링크/북마크/주소창 어떤 방식으로 열어도 항상 최신 데이터 로드
+  if(!sessionStorage.getItem('fresh')){
+    sessionStorage.setItem('fresh','1');
+    const url=new URL(window.location.href);
+    url.searchParams.set('nocache',Date.now());
+    window.location.replace(url.toString());
+  }
+</script>
+<title>(SCK) DRTV 효율 분석 리포트</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b;font-size:13px}
+.header{background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 20px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;flex-shrink:0}
+.header h1{font-size:15px;font-weight:700;color:#1e293b}
+.header p{font-size:11px;color:#94a3b8}
+.badges{margin-left:auto;display:flex;gap:6px}
+.badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px solid}
+.badge-indigo{background:#eef2ff;color:#4f46e5;border-color:#c7d2fe}
+.badge-green{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0}
+.formula-bar{font-size:10px;color:#94a3b8;font-family:monospace;background:#f8fafc;border-radius:8px;padding:5px 10px;margin-bottom:8px}
+.tabs{display:flex;flex-direction:column;gap:6px;width:100%}
+.tab{padding:8px 10px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;color:#64748b;background:transparent;transition:.15s;width:100%;text-align:left}
+.tab.active{background:#4f46e5;color:#fff;box-shadow:0 1px 4px rgba(79,70,229,.4)}
+.tab:hover:not(.active){background:#f1f5f9}
+.page-body{display:flex;align-items:flex-start;max-width:1280px;margin:0 auto}
+.month-sidebar{width:140px;flex-shrink:0;padding:16px 12px;position:sticky;align-self:flex-start;display:flex;flex-direction:column;gap:6px}
+#month-btns{display:flex;flex-direction:row;gap:6px;flex-wrap:wrap}
+#month-btns .ftag{text-align:center;border-radius:8px;padding:5px 10px;font-size:11px;line-height:1.4}
+.ftag.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
+.main{flex:1;padding:16px;min-width:0}
+.section{display:none}.section.active{display:block}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #f1f5f9}
+.kpi-label{font-size:11px;color:#94a3b8;font-weight:500;margin-bottom:4px}
+.kpi-value{font-size:20px;font-weight:700;margin-bottom:2px}
+.kpi-sub{font-size:10px;color:#94a3b8}
+.kpi-formula{font-size:10px;color:#a5b4fc;font-family:monospace;margin-top:3px}
+.section-title{font-size:12px;font-weight:700;color:#374151;margin-bottom:2px}
+.section-sub{font-size:10px;color:#94a3b8;margin-bottom:12px}
+.c-indigo{color:#4f46e5}.c-green{color:#16a34a}.c-amber{color:#d97706}.c-purple{color:#9333ea}.c-blue{color:#2563eb}.c-red{color:#dc2626}
+.chart-wrap{width:100%;overflow:hidden}
+svg text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{padding:6px 8px;text-align:left;font-weight:600;color:#64748b;border-bottom:2px solid #f1f5f9;background:#f8fafc;white-space:nowrap}
+td{padding:5px 8px;border-bottom:1px solid #f8fafc;white-space:nowrap}
+tr:hover td{background:#f8fafc}
+.chip{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:600;font-size:11px}
+.chip-green{background:#f0fdf4;color:#16a34a}
+.chip-blue{background:#eef2ff;color:#4f46e5}
+.chip-amber{background:#fffbeb;color:#d97706}
+.chip-red{background:#fef2f2;color:#dc2626}
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.filter-label{font-size:11px;font-weight:600;color:#64748b;margin-right:4px}
+.ftag{padding:3px 10px;border-radius:99px;border:1px solid #e2e8f0;cursor:pointer;font-size:11px;font-weight:500;color:#94a3b8;background:#fff;transition:.15s}
+.ftag.on{color:#fff;border-color:transparent}
+.ftag:hover:not(.on){background:#f1f5f9}
+.metric-btn{padding:3px 10px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:500;color:#64748b;background:#f1f5f9;transition:.15s}
+.metric-btn.on{background:#4f46e5;color:#fff}
+.info-box{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e;margin-bottom:10px}
+tfoot td{font-weight:700;background:#fffbeb;color:#92400e}
+#tip{position:fixed;background:rgba(15,23,42,.92);color:#fff;font-size:11px;padding:6px 10px;border-radius:8px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:9999;line-height:1.7;white-space:pre;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="logo" style="background:none;padding:0">
+      <img src="logo.svg" width="32" height="32" alt="세이브더칠드런 로고" style="display:block;">
+    </div>
+    <div><h1>(SCK) DRTV 효율 분석 리포트</h1><p id="hdr-date"></p></div>
+    <div class="badges">
+      <span class="badge badge-indigo" id="hdr-roi"></span>
+      <span class="badge badge-green" id="hdr-jg"></span>
+    </div>
+  </div>
+  <div class="formula-bar" id="formula-bar"></div>
+  <div id="month-btns"></div>
+</div>
+<div class="page-body">
+  <div class="month-sidebar">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('overview',this)">📊 전체 현황</button>
+      <button class="tab" onclick="showTab('channel',this)">📡 매체별 분석</button>
+      <button class="tab" onclick="showTab('material',this)">🎬 소재별 분석</button>
+    </div>
+  </div>
+  <div class="main">
+    <div id="overview" class="section active"></div>
+    <div id="channel" class="section"></div>
+    <div id="material" class="section"></div>
+  </div>
+</div>
+
+<script>
+// ────────── 데이터 (월별) ──────────
+const MONTHS_DATA={"2026-01":{daily:[
+ {date:"1/1",요일:"목",광고비:5417352,송출:0,인입콜:43,응대콜:33,정기건수:16,정기금액:340000,일시금액:180000,총후원금:520000,ROI:0.75,CPR:125985,CPA:318668,응대율:76.7,전환율:48.5},
+ {date:"1/2",요일:"금",광고비:5990503,송출:0,인입콜:50,응대콜:33,정기건수:14,정기금액:305000,일시금액:670000,총후원금:975000,ROI:0.61,CPR:119810,CPA:392820,응대율:66,전환율:42.4},
+ {date:"1/3",요일:"토",광고비:4402395,송출:0,인입콜:25,응대콜:17,정기건수:14,정기금액:310000,일시금액:50000,총후원금:360000,ROI:0.84,CPR:176096,CPA:284025,응대율:68,전환율:82.4},
+ {date:"1/4",요일:"일",광고비:4796265,송출:0,인입콜:11,응대콜:11,정기건수:8,정기금액:165000,일시금액:20000,총후원금:185000,ROI:0.41,CPR:436024,CPA:581365,응대율:100,전환율:72.7},
+ {date:"1/5",요일:"월",광고비:5266288,송출:0,인입콜:57,응대콜:38,정기건수:20,정기금액:460000,일시금액:100000,총후원금:560000,ROI:1.05,CPR:92391,CPA:228969,응대율:66.7,전환율:52.6},
+ {date:"1/6",요일:"화",광고비:5148070,송출:0,인입콜:46,응대콜:34,정기건수:17,정기금액:375000,일시금액:280000,총후원금:655000,ROI:0.87,CPR:111915,CPA:274564,응대율:73.9,전환율:50},
+ {date:"1/7",요일:"수",광고비:5171692,송출:0,인입콜:47,응대콜:30,정기건수:20,정기금액:440000,일시금액:90000,총후원금:530000,ROI:1.02,CPR:110036,CPA:235077,응대율:63.8,전환율:66.7},
+ {date:"1/8",요일:"목",광고비:5256779,송출:0,인입콜:52,응대콜:31,정기건수:17,정기금액:405000,일시금액:80000,총후원금:485000,ROI:0.92,CPR:101092,CPA:259594,응대율:59.6,전환율:54.8},
+ {date:"1/9",요일:"금",광고비:5868935,송출:0,인입콜:41,응대콜:25,정기건수:10,정기금액:245000,일시금액:140000,총후원금:385000,ROI:0.5,CPR:143145,CPA:479097,응대율:61,전환율:40},
+ {date:"1/10",요일:"토",광고비:4404409,송출:0,인입콜:34,응대콜:25,정기건수:18,정기금액:400000,일시금액:0,총후원금:400000,ROI:1.09,CPR:129541,CPA:220220,응대율:73.5,전환율:72},
+ {date:"1/11",요일:"일",광고비:4299013,송출:0,인입콜:30,응대콜:26,정기건수:15,정기금액:300000,일시금액:40000,총후원금:340000,ROI:0.84,CPR:143300,CPA:286601,응대율:86.7,전환율:57.7},
+ {date:"1/12",요일:"월",광고비:4859007,송출:0,인입콜:57,응대콜:27,정기건수:15,정기금액:340000,일시금액:60000,총후원금:400000,ROI:0.84,CPR:85246,CPA:285824,응대율:47.4,전환율:55.6},
+ {date:"1/13",요일:"화",광고비:4668628,송출:0,인입콜:48,응대콜:40,정기건수:16,정기금액:365000,일시금액:400000,총후원금:765000,ROI:0.94,CPR:97263,CPA:255815,응대율:83.3,전환율:40},
+ {date:"1/14",요일:"수",광고비:4764413,송출:0,인입콜:34,응대콜:23,정기건수:15,정기금액:330000,일시금액:0,총후원금:330000,ROI:0.83,CPR:140130,CPA:288752,응대율:67.6,전환율:65.2},
+ {date:"1/15",요일:"목",광고비:5188029,송출:0,인입콜:49,응대콜:24,정기건수:17,정기금액:365000,일시금액:20000,총후원금:385000,ROI:0.84,CPR:105878,CPA:284276,응대율:49,전환율:70.8},
+ {date:"1/16",요일:"금",광고비:5014383,송출:0,인입콜:33,응대콜:22,정기건수:15,정기금액:325000,일시금액:140000,총후원금:465000,ROI:0.78,CPR:151951,CPA:308577,응대율:66.7,전환율:68.2},
+ {date:"1/17",요일:"토",광고비:3665146,송출:0,인입콜:19,응대콜:5,정기건수:5,정기금액:105000,일시금액:50000,총후원금:155000,ROI:0.34,CPR:192902,CPA:698123,응대율:26.3,전환율:100},
+ {date:"1/18",요일:"일",광고비:4029266,송출:0,인입콜:42,응대콜:27,정기건수:14,정기금액:310000,일시금액:90000,총후원금:400000,ROI:0.92,CPR:95935,CPA:259953,응대율:64.3,전환율:51.9},
+ {date:"1/19",요일:"월",광고비:4162948,송출:0,인입콜:49,응대콜:25,정기건수:13,정기금액:290000,일시금액:150000,총후원금:440000,ROI:0.84,CPR:84958,CPA:287100,응대율:51,전환율:52},
+ {date:"1/20",요일:"화",광고비:4009180,송출:0,인입콜:35,응대콜:20,정기건수:10,정기금액:245000,일시금액:140000,총후원금:385000,ROI:0.73,CPR:114548,CPA:327280,응대율:57.1,전환율:50},
+ {date:"1/21",요일:"수",광고비:3824822,송출:0,인입콜:53,응대콜:28,정기건수:20,정기금액:515000,일시금액:70000,총후원금:585000,ROI:1.62,CPR:72166,CPA:148537,응대율:52.8,전환율:71.4},
+ {date:"1/22",요일:"목",광고비:4105951,송출:0,인입콜:43,응대콜:31,정기건수:16,정기금액:310000,일시금액:80000,총후원금:390000,ROI:0.91,CPR:95487,CPA:264900,응대율:72.1,전환율:51.6},
+ {date:"1/23",요일:"금",광고비:4871524,송출:0,인입콜:64,응대콜:33,정기건수:16,정기금액:380000,일시금액:340000,총후원금:720000,ROI:0.94,CPR:76118,CPA:256396,응대율:51.6,전환율:48.5},
+ {date:"1/24",요일:"토",광고비:4374454,송출:0,인입콜:35,응대콜:24,정기건수:13,정기금액:310000,일시금액:40000,총후원금:350000,ROI:0.85,CPR:124984,CPA:282223,응대율:68.6,전환율:54.2},
+ {date:"1/25",요일:"일",광고비:3886410,송출:0,인입콜:34,응대콜:23,정기건수:14,정기금액:330000,일시금액:40000,총후원금:370000,ROI:1.02,CPR:114306,CPA:235540,응대율:67.6,전환율:60.9},
+ {date:"1/26",요일:"월",광고비:4090786,송출:0,인입콜:50,응대콜:30,정기건수:14,정기금액:270000,일시금액:380000,총후원금:650000,ROI:0.79,CPR:81816,CPA:303021,응대율:60,전환율:46.7},
+ {date:"1/27",요일:"화",광고비:4009184,송출:0,인입콜:47,응대콜:25,정기건수:14,정기금액:310000,일시금액:310000,총후원금:620000,ROI:0.93,CPR:85302,CPA:258657,응대율:53.2,전환율:56},
+ {date:"1/28",요일:"수",광고비:4038373,송출:0,인입콜:28,응대콜:19,정기건수:16,정기금액:368000,일시금액:240000,총후원금:608000,ROI:1.09,CPR:144228,CPA:219477,응대율:67.9,전환율:84.2},
+ {date:"1/29",요일:"목",광고비:4391665,송출:0,인입콜:68,응대콜:34,정기건수:22,정기금액:500000,일시금액:170000,총후원금:670000,ROI:1.37,CPR:64583,CPA:175667,응대율:50,전환율:64.7},
+ {date:"1/30",요일:"금",광고비:5014383,송출:0,인입콜:44,응대콜:25,정기건수:15,정기금액:395000,일시금액:140000,총후원금:535000,ROI:0.95,CPR:113963,CPA:253893,응대율:56.8,전환율:60},
+ {date:"1/31",요일:"토",광고비:4559725,송출:0,인입콜:27,응대콜:16,정기건수:9,정기금액:205000,일시금액:80000,총후원금:285000,ROI:0.54,CPR:168879,CPA:444851,응대율:59.3,전환율:56.2}
+],channel:[
+ {ch:"SPOTV",광고비:5500002,인입콜:79,응대콜:53,정기건수:25,정기금액:620000,ROI:1.35,CPR:69620,CPA:177419,응대율:67.1,콜전환율:59.4,정기전환율:47.2},
+ {ch:"빌리어즈TV",광고비:10999989,인입콜:98,응대콜:66,정기건수:39,정기금액:890000,ROI:0.97,CPR:112245,CPA:247191,응대율:67.3,콜전환율:107.7,정기전환율:59.1},
+ {ch:"EBS",광고비:38500002,인입콜:316,응대콜:190,정기건수:126,정기금액:2850000,ROI:0.89,CPR:121835,CPA:270175,응대율:60.1,콜전환율:367.4,정기전환율:66.3},
+ {ch:"JTBC4",광고비:55000000,인입콜:408,응대콜:293,정기건수:179,정기금액:4045000,ROI:0.88,CPR:134804,CPA:271941,응대율:71.8,콜전환율:29.3,정기전환율:61.1},
+ {ch:"시네마천국",광고비:8800001,인입콜:74,응대콜:51,정기건수:26,정기금액:540000,ROI:0.74,CPR:118919,CPA:325926,응대율:68.9,콜전환율:26.5,정기전환율:51},
+ {ch:"라이프타임",광고비:5499997,인입콜:46,응대콜:30,정기건수:15,정기금액:325000,ROI:0.71,CPR:119565,CPA:338461,응대율:65.2,콜전환율:38.3,정기전환율:50},
+ {ch:"바둑TV",광고비:2750002,인입콜:22,응대콜:12,정기건수:6,정기금액:125000,ROI:0.55,CPR:125000,CPA:440000,응대율:54.5,콜전환율:27.5,정기전환율:50},
+ {ch:"중화TV",광고비:5499998,인입콜:18,응대콜:9,정기건수:10,정기금액:210000,ROI:0.46,CPR:305555,CPA:523809,응대율:50,콜전환율:40.9,정기전환율:111.1},
+ {ch:"SPOTV2",광고비:5499989,인입콜:29,응대콜:14,정기건수:8,정기금액:170000,ROI:0.37,CPR:189655,CPA:647058,응대율:48.3,콜전환율:23.4,정기전환율:57.1},
+ {ch:"CNTV",광고비:2750000,인입콜:22,응대콜:7,정기건수:2,정기금액:60000,ROI:0.26,CPR:125000,CPA:916667,응대율:31.8,콜전환율:55,정기전환율:28.6},
+ {ch:"채널J",광고비:2749998,인입콜:3,응대콜:3,정기건수:2,정기금액:50000,ROI:0.22,CPR:916666,CPA:1099999,응대율:100,콜전환율:5.8,정기전환율:66.7}
+],other:[
+ {ch:"발신",인입콜:132,응대콜:47,정기건수:0,정기금액:0,유효일수:26,응대율:35.6},
+ {ch:"히스토리 (SVC)",인입콜:9,응대콜:6,정기건수:5,정기금액:100000,유효일수:6,응대율:66.7},
+ {ch:"SPOTV G&H (SVC)",인입콜:18,응대콜:7,정기건수:8,정기금액:165000,유효일수:13,응대율:38.9},
+ {ch:"JTBC2 (SVC)",인입콜:13,응대콜:12,정기건수:4,정기금액:95000,유효일수:11,응대율:92.3},
+ {ch:"애니원_애니박스 (SVC)",인입콜:8,응대콜:4,정기건수:2,정기금액:38000,유효일수:6,응대율:50},
+ {ch:"기타 TV채널",인입콜:0,응대콜:0,정기건수:1,정기금액:30000,유효일수:0,응대율:0}
+],material:[
+ {name:"식사지원 은영이ver2",정기건수:129,인입콜:325,응대콜:195,ROI:0.9,CPR:119849,CPA:267887,응대율:60,광고비:38950822,정기금액:2908000},
+ {name:"식사지원 지영이",정기건수:76,인입콜:225,응대콜:139,ROI:1.03,CPR:87606,CPA:233270,응대율:61.8,광고비:19711290,정기금액:1690000},
+ {name:"식사지원 은영이_콜문구",정기건수:49,인입콜:116,응대콜:75,ROI:0.8,CPR:142241,CPA:300000,응대율:64.7,광고비:16499987,정기금액:1100000},
+ {name:"식사지원 은영이 ver2",정기건수:39,인입콜:102,응대콜:57,ROI:1.03,CPR:106362,CPA:233309,응대율:55.9,광고비:10848878,정기금액:930000},
+ {name:"가족돌봄 지수",정기건수:42,인입콜:89,응대콜:69,ROI:0.98,CPR:123125,CPA:244873,응대율:77.5,광고비:10958084,정기금액:895000},
+ {name:"난방비 동하",정기건수:35,인입콜:98,응대콜:71,ROI:0.65,CPR:151699,CPA:371663,응대율:72.4,광고비:14866533,정기금액:800000},
+ {name:"식사지원 준우_셰프",정기건수:21,인입콜:52,응대콜:39,ROI:0.82,CPR:133847,CPA:293054,응대율:75,광고비:6960030,정기금액:475000},
+ {name:"식사지원 준우_메인",정기건수:18,인입콜:28,응대콜:23,ROI:0.91,CPR:198546,CPA:264727,응대율:82.1,광고비:5559276,정기금액:420000},
+ {name:"은영이 셀럽",정기건수:18,인입콜:41,응대콜:31,ROI:0.87,CPR:133813,CPA:274317,응대율:75.6,광고비:5486346,정기금액:400000},
+ {name:"가족돌봄 지수ver2",정기건수:15,인입콜:46,응대콜:30,ROI:0.71,CPR:119565,CPA:338461,응대율:65.2,광고비:5499997,정기금액:325000},
+ {name:"식사지원 준우_아동",정기건수:9,인입콜:29,응대콜:19,ROI:0.51,CPR:161086,CPA:467148,응대율:65.5,광고비:4671485,정기금액:200000},
+ {name:"식사지원 준우_할머니",정기건수:3,인입콜:6,응대콜:4,ROI:0.3,CPR:472655,CPA:810265,응대율:66.7,광고비:2835929,정기금액:70000},
+ {name:"뇌병변 무준이ver2",정기건수:3,인입콜:6,응대콜:5,ROI:1.2,CPR:116887,CPA:200377,응대율:83.3,광고비:701321,정기금액:70000}
+],kpi:{총광고비:143549978,총인입콜:1295,총정기건수:458,총정기금액:10313000,ROI:0.86,CPR:110849,CPA:278386,평균응대율:62.1}},
+"2026-02":{daily:[
+ {date:"2/1",요일:"일",광고비:4388951,송출:0,인입콜:35,응대콜:28,정기건수:18,정기금액:380000,일시금액:1020000,총후원금:1400000,ROI:1.04,CPR:125399,CPA:230997,응대율:80,전환율:64.3},
+ {date:"2/2",요일:"월",광고비:4656539,송출:0,인입콜:35,응대콜:22,정기건수:12,정기금액:270000,일시금액:60000,총후원금:330000,ROI:0.7,CPR:133044,CPA:344929,응대율:62.9,전환율:54.5},
+ {date:"2/3",요일:"화",광고비:4598829,송출:0,인입콜:29,응대콜:19,정기건수:13,정기금액:295000,일시금액:20000,총후원금:315000,ROI:0.77,CPR:158580,CPA:311785,응대율:65.5,전환율:68.4},
+ {date:"2/4",요일:"수",광고비:4514856,송출:0,인입콜:37,응대콜:19,정기건수:15,정기금액:300000,일시금액:40000,총후원금:340000,ROI:0.8,CPR:122023,CPA:300990,응대율:51.4,전환율:78.9},
+ {date:"2/5",요일:"목",광고비:5655442,송출:0,인입콜:45,응대콜:26,정기건수:15,정기금액:280000,일시금액:0,총후원금:280000,ROI:0.59,CPR:125676,CPA:403960,응대율:57.8,전환율:57.7},
+ {date:"2/6",요일:"금",광고비:5241933,송출:0,인입콜:55,응대콜:31,정기건수:21,정기금액:450000,일시금액:70000,총후원금:520000,ROI:1.03,CPR:95308,CPA:232975,응대율:56.4,전환율:67.7},
+ {date:"2/7",요일:"토",광고비:4246995,송출:0,인입콜:27,응대콜:20,정기건수:14,정기금액:290000,일시금액:50000,총후원금:340000,ROI:0.82,CPR:157296,CPA:292896,응대율:74.1,전환율:70},
+ {date:"2/8",요일:"일",광고비:4388953,송출:0,인입콜:39,응대콜:26,정기건수:14,정기금액:260000,일시금액:40000,총후원금:300000,ROI:0.71,CPR:112537,CPA:337612,응대율:66.7,전환율:53.8},
+ {date:"2/9",요일:"월",광고비:4656540,송출:0,인입콜:40,응대콜:23,정기건수:15,정기금액:280000,일시금액:10000000,총후원금:10280000,ROI:0.72,CPR:116414,CPA:332610,응대율:57.5,전환율:65.2},
+ {date:"2/10",요일:"화",광고비:4598830,송출:0,인입콜:43,응대콜:25,정기건수:16,정기금액:380000,일시금액:0,총후원금:380000,ROI:0.99,CPR:106950,CPA:242044,응대율:58.1,전환율:64},
+ {date:"2/11",요일:"수",광고비:4514855,송출:0,인입콜:52,응대콜:29,정기건수:16,정기금액:380000,일시금액:10000,총후원금:390000,ROI:1.01,CPR:86824,CPA:237624,응대율:55.8,전환율:55.2},
+ {date:"2/12",요일:"목",광고비:5655442,송출:0,인입콜:35,응대콜:26,정기건수:13,정기금액:295000,일시금액:60000,총후원금:355000,ROI:0.63,CPR:161584,CPA:383420,응대율:74.3,전환율:50},
+ {date:"2/13",요일:"금",광고비:5241935,송출:0,인입콜:30,응대콜:19,정기건수:14,정기금액:310000,일시금액:30000,총후원금:340000,ROI:0.71,CPR:174731,CPA:338189,응대율:63.3,전환율:73.7},
+ {date:"2/14",요일:"토",광고비:4246995,송출:0,인입콜:29,응대콜:24,정기건수:13,정기금액:285000,일시금액:40000,총후원금:325000,ROI:0.81,CPR:146448,CPA:298035,응대율:82.8,전환율:54.2},
+ {date:"2/15",요일:"일",광고비:4493715,송출:0,인입콜:25,응대콜:20,정기건수:12,정기금액:250000,일시금액:20000,총후원금:270000,ROI:0.67,CPR:179749,CPA:359497,응대율:80,전환율:60},
+ {date:"2/16",요일:"월",광고비:4967683,송출:0,인입콜:47,응대콜:28,정기건수:8,정기금액:185000,일시금액:140000,총후원금:325000,ROI:0.45,CPR:105695,CPA:537047,응대율:59.6,전환율:28.6},
+ {date:"2/17",요일:"화",광고비:4909970,송출:0,인입콜:25,응대콜:20,정기건수:15,정기금액:365000,일시금액:20000,총후원금:385000,ROI:0.89,CPR:196399,CPA:269039,응대율:80,전환율:75},
+ {date:"2/18",요일:"수",광고비:4825995,송출:0,인입콜:27,응대콜:23,정기건수:17,정기금액:400000,일시금액:20000,총후원금:420000,ROI:0.99,CPR:178741,CPA:241300,응대율:85.2,전환율:73.9},
+ {date:"2/19",요일:"목",광고비:5760203,송출:0,인입콜:63,응대콜:35,정기건수:29,정기금액:650000,일시금액:290000,총후원금:940000,ROI:1.35,CPR:91432,CPA:177237,응대율:55.6,전환율:82.9},
+ {date:"2/20",요일:"금",광고비:5346696,송출:0,인입콜:51,응대콜:34,정기건수:19,정기금액:425000,일시금액:110000,총후원금:535000,ROI:0.95,CPR:104837,CPA:251609,응대율:66.7,전환율:55.9},
+ {date:"2/21",요일:"토",광고비:4351759,송출:0,인입콜:16,응대콜:11,정기건수:7,정기금액:150000,일시금액:10000,총후원금:160000,ROI:0.41,CPR:271985,CPA:580235,응대율:68.8,전환율:63.6},
+ {date:"2/22",요일:"일",광고비:4493716,송출:0,인입콜:48,응대콜:32,정기건수:21,정기금액:510000,일시금액:20000,총후원금:530000,ROI:1.36,CPR:93619,CPA:176224,응대율:66.7,전환율:65.6},
+ {date:"2/23",요일:"월",광고비:4761303,송출:0,인입콜:54,응대콜:32,정기건수:21,정기금액:430000,일시금액:290000,총후원금:720000,ROI:1.08,CPR:88172,CPA:221456,응대율:59.3,전환율:65.6},
+ {date:"2/24",요일:"화",광고비:4703591,송출:0,인입콜:31,응대콜:23,정기건수:18,정기금액:410000,일시금액:30000,총후원금:440000,ROI:1.05,CPR:151729,CPA:229443,응대율:74.2,전환율:78.3},
+ {date:"2/25",요일:"수",광고비:4619615,송출:0,인입콜:36,응대콜:24,정기건수:10,정기금액:170000,일시금액:170000,총후원금:340000,ROI:0.44,CPR:128323,CPA:543484,응대율:66.7,전환율:41.7},
+ {date:"2/26",요일:"목",광고비:5760202,송출:0,인입콜:50,응대콜:35,정기건수:15,정기금액:350000,일시금액:80000,총후원금:430000,ROI:0.73,CPR:115204,CPA:329154,응대율:70,전환율:42.9},
+ {date:"2/27",요일:"금",광고비:5346695,송출:0,인입콜:54,응대콜:36,정기건수:21,정기금액:525000,일시금액:70000,총후원금:595000,ROI:1.18,CPR:99013,CPA:203684,응대율:66.7,전환율:58.3},
+ {date:"2/28",요일:"토",광고비:4351759,송출:0,인입콜:34,응대콜:23,정기건수:16,정기금액:350000,일시금액:0,총후원금:350000,ROI:0.97,CPR:127993,CPA:248672,응대율:67.6,전환율:69.6}
+],channel:[
+ {ch:"SPOTV",광고비:5500004,인입콜:50,응대콜:25,정기건수:20,정기금액:465000,ROI:1.01,CPR:110000,CPA:236559,응대율:50,콜전환율:33.8,정기전환율:80},
+ {ch:"시네마천국",광고비:5500012,인입콜:44,응대콜:33,정기건수:20,정기금액:445000,ROI:0.97,CPR:125000,CPA:247192,응대율:75,콜전환율:19.6,정기전환율:60.6},
+ {ch:"EBS",광고비:36299997,인입콜:283,응대콜:182,정기건수:120,정기금액:2555000,ROI:0.84,CPR:128269,CPA:284149,응대율:64.3,콜전환율:341,정기전환율:65.9},
+ {ch:"JTBC4",광고비:55000000,인입콜:361,응대콜:263,정기건수:172,정기금액:3855000,ROI:0.84,CPR:152355,CPA:285344,응대율:72.9,콜전환율:27.8,정기전환율:65.4},
+ {ch:"MBN PLUS",광고비:21999992,인입콜:134,응대콜:87,정기건수:61,정기금액:1340000,ROI:0.73,CPR:164179,CPA:328358,응대율:64.9,콜전환율:63.8,정기전환율:70.1},
+ {ch:"라이프타임",광고비:5499996,인입콜:41,응대콜:24,정기건수:14,정기금액:310000,ROI:0.68,CPR:134146,CPA:354838,응대율:58.5,콜전환율:34.2,정기전환율:58.3},
+ {ch:"SPOTV2",광고비:5499996,인입콜:27,응대콜:14,정기건수:8,정기금액:175000,ROI:0.38,CPR:203704,CPA:628571,응대율:51.9,콜전환율:22.5,정기전환율:57.1}
+],other:[
+ {ch:"발신",인입콜:103,응대콜:58,정기건수:0,정기금액:0,유효일수:25,응대율:56.3},
+ {ch:"히스토리 (SVC)",인입콜:14,응대콜:6,정기건수:5,정기금액:125000,유효일수:9,응대율:42.9},
+ {ch:"SPOTV G&H (SVC)",인입콜:22,응대콜:17,정기건수:13,정기금액:275000,유효일수:11,응대율:77.3},
+ {ch:"JTBC2 (SVC)",인입콜:6,응대콜:4,정기건수:4,정기금액:60000,유효일수:5,응대율:66.7},
+ {ch:"기타 TV채널",인입콜:7,응대콜:0,정기건수:1,정기금액:20000,유효일수:6,응대율:0}
+],material:[
+ {name:"식사지원 은영이ver2",정기건수:120,인입콜:283,응대콜:182,ROI:0.84,CPR:128269,CPA:284149,응대율:64.3,광고비:36299997,정기금액:2555000},
+ {name:"은영이 셀럽",정기건수:74,인입콜:164,응대콜:109,ROI:0.7,CPR:168792,CPA:342809,응대율:66.5,광고비:27681810,정기금액:1615000},
+ {name:"식사지원 지영이",정기건수:66,인입콜:157,응대콜:95,ROI:1.08,CPR:105096,CPA:222222,응대율:60.5,광고비:16500012,정기금액:1485000},
+ {name:"식사지원 준우_셰프",정기건수:44,인입콜:92,응대콜:65,ROI:1.21,CPR:106552,CPA:199041,응대율:70.7,광고비:9802763,정기금액:985000},
+ {name:"가족돌봄 지수",정기건수:39,인입콜:84,응대콜:61,ROI:1,CPR:131501,CPA:240132,응대율:72.6,광고비:11046084,정기금액:920000},
+ {name:"식사지원 은영이 ver2",정기건수:33,인입콜:69,응대콜:52,ROI:0.78,CPR:160203,CPA:307056,응대율:75.4,광고비:11054023,정기금액:720000},
+ {name:"난방비 동하",정기건수:26,인입콜:50,응대콜:39,ROI:0.77,CPR:163038,CPA:310549,응대율:78,광고비:8151923,정기금액:525000},
+ {name:"뇌병변 무준이ver2",정기건수:19,인입콜:37,응대콜:25,ROI:0.77,CPR:190474,CPA:313224,응대율:67.6,광고비:7047538,정기금액:450000},
+ {name:"가족돌봄 지수ver2",정기건수:14,인입콜:41,응대콜:24,ROI:0.68,CPR:134146,CPA:354838,응대율:58.5,광고비:5499996,정기금액:310000},
+ {name:"식사지원 준우_메인",정기건수:2,인입콜:5,응대콜:3,ROI:0.22,CPR:443170,CPA:1107926,응대율:60,광고비:2215851,정기금액:40000}
+],kpi:{총광고비:135299997,총인입콜:1092,총정기건수:438,총정기금액:9625000,ROI:0.85,CPR:123901,CPA:281143,평균응대율:65.3}},
+"2026-03":{daily:[
+ {date:"3/1",요일:"일",광고비:4722642,송출:0,인입콜:37,응대콜:27,정기건수:18,정기금액:460000,일시금액:0,총후원금:460000,ROI:1.17,CPR:127639,CPA:205332,응대율:73,전환율:66.7},
+ {date:"3/2",요일:"월",광고비:5028617,송출:0,인입콜:47,응대콜:31,정기건수:26,정기금액:620000,일시금액:30000,총후원금:650000,ROI:1.48,CPR:106992,CPA:162213,응대율:66,전환율:83.9},
+ {date:"3/3",요일:"화",광고비:4696021,송출:0,인입콜:58,응대콜:33,정기건수:24,정기금액:515000,일시금액:120000,총후원금:635000,ROI:1.32,CPR:80966,CPA:182370,응대율:56.9,전환율:72.7},
+ {date:"3/4",요일:"수",광고비:4895179,송출:0,인입콜:26,응대콜:14,정기건수:4,정기금액:65000,일시금액:95000,총후원금:160000,ROI:0.16,CPR:188276,CPA:1506209,응대율:53.8,전환율:28.6},
+ {date:"3/5",요일:"목",광고비:5822810,송출:0,인입콜:32,응대콜:24,정기건수:15,정기금액:305000,일시금액:60000,총후원금:365000,ROI:0.63,CPR:181963,CPA:381824,응대율:75,전환율:62.5},
+ {date:"3/6",요일:"금",광고비:5009960,송출:0,인입콜:49,응대콜:30,정기건수:22,정기금액:540000,일시금액:60000,총후원금:600000,ROI:1.29,CPR:102244,CPA:185554,응대율:61.2,전환율:73.3},
+ {date:"3/7",요일:"토",광고비:5008933,송출:0,인입콜:33,응대콜:27,정기건수:9,정기금액:195000,일시금액:110000,총후원금:305000,ROI:0.47,CPR:151786,CPA:513737,응대율:81.8,전환율:33.3},
+ {date:"3/8",요일:"일",광고비:4787555,송출:0,인입콜:39,응대콜:28,정기건수:16,정기금액:375000,일시금액:220000,총후원금:595000,ROI:0.94,CPR:122758,CPA:255336,응대율:71.8,전환율:57.1},
+ {date:"3/9",요일:"월",광고비:5294307,송출:0,인입콜:30,응대콜:15,정기건수:9,정기금액:205000,일시금액:90000,총후원금:295000,ROI:0.46,CPR:176477,CPA:516518,응대율:50,전환율:60},
+ {date:"3/10",요일:"화",광고비:4506484,송출:0,인입콜:47,응대콜:32,정기건수:22,정기금액:515000,일시금액:60000,총후원금:575000,ROI:1.37,CPR:95883,CPA:175009,응대율:68.1,전환율:68.8},
+ {date:"3/11",요일:"수",광고비:5585847,송출:0,인입콜:39,응대콜:29,정기건수:12,정기금액:280000,일시금액:40000,총후원금:320000,ROI:0.6,CPR:143227,CPA:398989,응대율:74.4,전환율:41.4},
+ {date:"3/12",요일:"목",광고비:5758500,송출:0,인입콜:56,응대콜:30,정기건수:21,정기금액:430000,일시금액:190000,총후원금:620000,ROI:0.9,CPR:102830,CPA:267837,응대율:53.6,전환율:70},
+ {date:"3/13",요일:"금",광고비:4569960,송출:0,인입콜:36,응대콜:25,정기건수:12,정기금액:305000,일시금액:2040000,총후원금:2345000,ROI:0.8,CPR:126943,CPA:299670,응대율:69.4,전환율:48},
+ {date:"3/14",요일:"토",광고비:4568934,송출:0,인입콜:38,응대콜:22,정기건수:7,정기금액:150000,일시금액:40000,총후원금:190000,ROI:0.39,CPR:120235,CPA:609191,응대율:57.9,전환율:31.8},
+ {date:"3/15",요일:"일",광고비:4347555,송출:0,인입콜:42,응대콜:35,정기건수:17,정기금액:345000,일시금액:65000,총후원금:410000,ROI:0.95,CPR:103513,CPA:252032,응대율:83.3,전환율:48.6},
+ {date:"3/16",요일:"월",광고비:4480776,송출:0,인입콜:38,응대콜:23,정기건수:10,정기금액:200000,일시금액:20000,총후원금:220000,ROI:0.54,CPR:117915,CPA:448078,응대율:60.5,전환율:43.5},
+ {date:"3/17",요일:"화",광고비:3583213,송출:0,인입콜:35,응대콜:22,정기건수:11,정기금액:215000,일시금액:20000,총후원금:235000,ROI:0.72,CPR:102378,CPA:333322,응대율:62.9,전환율:50},
+ {date:"3/18",요일:"수",광고비:5084797,송출:0,인입콜:35,응대콜:22,정기건수:11,정기금액:260000,일시금액:40000,총후원금:300000,ROI:0.61,CPR:145280,CPA:391138,응대율:62.9,전환율:50},
+ {date:"3/19",요일:"목",광고비:5425817,송출:0,인입콜:27,응대콜:19,정기건수:10,정기금액:235000,일시금액:10000,총후원금:245000,ROI:0.52,CPR:200956,CPA:461772,응대율:70.4,전환율:52.6},
+ {date:"3/20",요일:"금",광고비:4467269,송출:0,인입콜:59,응대콜:38,정기건수:24,정기금액:510000,일시금액:550000,총후원금:1060000,ROI:1.37,CPR:75716,CPA:175187,응대율:64.4,전환율:63.2},
+ {date:"3/21",요일:"토",광고비:4369075,송출:0,인입콜:39,응대콜:23,정기건수:13,정기금액:315000,일시금액:60000,총후원금:375000,ROI:0.87,CPR:112028,CPA:277402,응대율:59,전환율:56.5},
+ {date:"3/22",요일:"일",광고비:4188741,송출:0,인입콜:34,응대콜:28,정기건수:10,정기금액:230000,일시금액:1140000,총후원금:1370000,ROI:0.66,CPR:123198,CPA:364238,응대율:82.4,전환율:35.7},
+ {date:"3/23",요일:"월",광고비:4547440,송출:0,인입콜:37,응대콜:23,정기건수:14,정기금액:290000,일시금액:60000,총후원금:350000,ROI:0.77,CPR:122904,CPA:313617,응대율:62.2,전환율:60.9},
+ {date:"3/24",요일:"화",광고비:4383214,송출:0,인입콜:26,응대콜:17,정기건수:10,정기금액:205000,일시금액:120000,총후원금:325000,ROI:0.56,CPR:168585,CPA:427631,응대율:65.4,전환율:58.8},
+ {date:"3/25",요일:"수",광고비:5084795,송출:0,인입콜:40,응대콜:27,정기건수:13,정기금액:360000,일시금액:610000,총후원금:970000,ROI:0.85,CPR:127120,CPA:282489,응대율:67.5,전환율:48.1},
+ {date:"3/26",요일:"목",광고비:5425817,송출:0,인입콜:43,응대콜:30,정기건수:15,정기금액:370000,일시금액:190000,총후원금:560000,ROI:0.82,CPR:126182,CPA:293287,응대율:69.8,전환율:50},
+ {date:"3/27",요일:"금",광고비:4467268,송출:0,인입콜:34,응대콜:22,정기건수:12,정기금액:270000,일시금액:150000,총후원금:420000,ROI:0.73,CPR:131390,CPA:330909,응대율:64.7,전환율:54.5},
+ {date:"3/28",요일:"토",광고비:4369074,송출:0,인입콜:44,응대콜:30,정기건수:15,정기금액:305000,일시금액:90000,총후원금:395000,ROI:0.84,CPR:99297,CPA:286497,응대율:68.2,전환율:50},
+ {date:"3/29",요일:"일",광고비:4188741,송출:0,인입콜:24,응대콜:22,정기건수:9,정기금액:225000,일시금액:20000,총후원금:245000,ROI:0.64,CPR:174531,CPA:372333,응대율:91.7,전환율:40.9},
+ {date:"3/30",요일:"월",광고비:4447443,송출:0,인입콜:23,응대콜:18,정기건수:16,정기금액:370000,일시금액:80000,총후원금:450000,ROI:1,CPR:193367,CPA:240402,응대율:78.3,전환율:88.9},
+ {date:"3/31",요일:"화",광고비:4283221,송출:0,인입콜:30,응대콜:23,정기건수:16,정기금액:360000,일시금액:90000,총후원금:450000,ROI:1.01,CPR:142774,CPA:237957,응대율:76.7,전환율:69.6}
+],channel:[
+ {ch:"빌리어즈TV",광고비:8140002,인입콜:99,응대콜:72,정기건수:40,정기금액:875000,ROI:1.29,CPR:82222,CPA:186057,응대율:72.7,콜전환율:94.3,정기전환율:55.6},
+ {ch:"시네마천국",광고비:5499989,인입콜:64,응대콜:47,정기건수:23,정기금액:495000,ROI:1.08,CPR:85937,CPA:222222,응대율:73.4,콜전환율:25.8,정기전환율:48.9},
+ {ch:"SPOTV",광고비:5500006,인입콜:46,응대콜:33,정기건수:18,정기금액:415000,ROI:0.91,CPR:119565,CPA:265061,응대율:71.7,콜전환율:32.4,정기전환율:54.5},
+ {ch:"JTBC4",광고비:49499995,인입콜:339,응대콜:255,정기건수:153,정기금액:3560000,ROI:0.86,CPR:146018,CPA:278090,응대율:75.2,콜전환율:22.2,정기전환율:60},
+ {ch:"MBN PLUS",광고비:21999994,인입콜:136,응대콜:101,정기건수:62,정기금액:1340000,ROI:0.73,CPR:161765,CPA:328358,응대율:74.3,콜전환율:63.3,정기전환율:61.4},
+ {ch:"SPOTV2",광고비:5500011,인입콜:28,응대콜:21,정기건수:14,정기금액:335000,ROI:0.73,CPR:196429,CPA:328359,응대율:75,콜전환율:21.1,정기전환율:66.7},
+ {ch:"EBS",광고비:36300001,인입콜:225,응대콜:139,정기건수:100,정기금액:2205000,ROI:0.73,CPR:161333,CPA:329252,응대율:61.8,콜전환율:250,정기전환율:71.9},
+ {ch:"라이프타임",광고비:5500008,인입콜:44,응대콜:29,정기건수:12,정기금액:275000,ROI:0.6,CPR:125000,CPA:400001,응대율:65.9,콜전환율:36.7,정기전환율:41.4},
+ {ch:"K STAR",광고비:5499999,인입콜:34,응대콜:18,정기건수:5,정기금액:105000,ROI:0.23,CPR:161765,CPA:1047619,응대율:52.9,콜전환율:56.7,정기전환율:27.8},
+ {ch:"TV조선2",광고비:3960000,인입콜:4,응대콜:1,정기건수:1,정기금액:20000,ROI:0.06,CPR:990000,CPA:3960000,응대율:25,콜전환율:11.1,정기전환율:100}
+],other:[
+ {ch:"발신",인입콜:93,응대콜:46,정기건수:0,정기금액:0,유효일수:28,응대율:49.5},
+ {ch:"히스토리 (SVC)",인입콜:30,응대콜:12,정기건수:5,정기금액:180000,유효일수:14,응대율:40},
+ {ch:"SPOTV G&H (SVC)",인입콜:18,응대콜:13,정기건수:9,정기금액:200000,유효일수:14,응대율:72.2},
+ {ch:"JTBC2 (SVC)",인입콜:8,응대콜:2,정기건수:1,정기금액:20000,유효일수:5,응대율:25},
+ {ch:"기타 TV채널",인입콜:9,응대콜:0,정기건수:0,정기금액:0,유효일수:5,응대율:0}
+],material:[
+ {name:"식사지원 은영이ver2",정기건수:141,인입콜:333,응대콜:215,ROI:0.72,CPR:155167,CPA:331222,응대율:64.6,광고비:51670583,정기금액:3120000},
+ {name:"은영이 셀럽",정기건수:67,인입콜:149,응대콜:110,ROI:0.74,CPR:159270,CPA:323975,응대율:73.8,광고비:23731162,정기금액:1465000},
+ {name:"식사지원 지영이",정기건수:55,인입콜:158,응대콜:105,ROI:1.41,CPR:69620,CPA:170543,응대율:66.5,광고비:10999995,정기금액:1290000},
+ {name:"식사지원 은영이_콜문구",정기건수:40,인입콜:99,응대콜:72,ROI:1.29,CPR:82222,CPA:186057,응대율:72.7,광고비:8140002,정기금액:875000},
+ {name:"가족돌봄 지수",정기건수:28,인입콜:58,응대콜:42,ROI:0.75,CPR:170197,CPA:318432,응대율:72.4,광고비:9871401,정기금액:620000},
+ {name:"식사지원 사랑이",정기건수:25,인입콜:56,응대콜:42,ROI:0.8,CPR:158897,CPA:301636,응대율:75,광고비:8898252,정기금액:590000},
+ {name:"식사지원 준우_셰프",정기건수:25,인입콜:59,응대콜:41,ROI:0.57,CPR:210457,CPA:424512,응대율:69.5,광고비:12416984,정기금액:585000},
+ {name:"뇌병변 무준이ver2",정기건수:23,인입콜:53,응대콜:37,ROI:0.92,CPR:140299,CPA:260907,응대율:69.8,광고비:7435853,정기금액:570000},
+ {name:"가족돌봄 선우",정기건수:17,인입콜:35,응대콜:28,ROI:0.83,CPR:134976,CPA:290717,응대율:80,광고비:4724146,정기금액:325000},
+ {name:"난방비 동하",정기건수:10,인입콜:31,응대콜:22,ROI:0.93,CPR:129407,CPA:258814,응대율:71,광고비:4011619,정기금액:310000},
+ {name:"가족돌봄 지수ver2",정기건수:12,인입콜:44,응대콜:29,ROI:0.6,CPR:125000,CPA:400001,응대율:65.9,광고비:5500008,정기금액:275000}
+],kpi:{총광고비:147400005,총인입콜:1177,총정기건수:443,총정기금액:10025000,ROI:0.82,CPR:125234,CPA:294065,평균응대율:67}},
+"2026-04":{daily:[
+ {date:"4/1",요일:"수",광고비:3736853,송출:0,인입콜:23,응대콜:14,정기건수:7,정기금액:180000,일시금액:20000,총후원금:200000,ROI:0.58,CPR:162472,CPA:415206,응대율:60.9,전환율:50},
+ {date:"4/2",요일:"목",광고비:4069785,송출:0,인입콜:33,응대콜:21,정기건수:12,정기금액:245000,일시금액:20000,총후원금:265000,ROI:0.72,CPR:123327,CPA:332227,응대율:63.6,전환율:57.1}
+],channel:[
+ {ch:"시네마천국",광고비:366666,인입콜:3,응대콜:2,정기건수:2,정기금액:75000,ROI:2.45,CPR:122222,CPA:97778,응대율:66.7,콜전환율:18.8,정기전환율:100},
+ {ch:"JTBC4",광고비:3519800,인입콜:18,응대콜:15,정기건수:10,정기금액:220000,ROI:0.75,CPR:195544,CPA:319982,응대율:83.3,콜전환율:18,정기전환율:66.7},
+ {ch:"EBS",광고비:2860000,인입콜:9,응대콜:7,정기건수:5,정기금액:100000,ROI:0.42,CPR:317778,CPA:572000,응대율:77.8,콜전환율:150,정기전환율:71.4},
+ {ch:"SPOTV2",광고비:343750,인입콜:3,응대콜:2,정기건수:1,정기금액:10000,ROI:0.35,CPR:114583,CPA:687500,응대율:66.7,콜전환율:37.5,정기전환율:50},
+ {ch:"SPOTV",광고비:295699,인입콜:1,응대콜:0,정기건수:0,정기금액:0,ROI:0,CPR:295699,CPA:0,응대율:0,콜전환율:20,정기전환율:0},
+ {ch:"라이프타임",광고비:420723,인입콜:4,응대콜:4,정기건수:0,정기금액:0,ROI:0,CPR:105181,CPA:0,응대율:100,콜전환율:50,정기전환율:0}
+],other:[
+ {ch:"발신",인입콜:9,응대콜:2,정기건수:0,정기금액:0,유효일수:2,응대율:22.2},
+ {ch:"히스토리 (SVC)",인입콜:0,응대콜:0,정기건수:0,정기금액:0,유효일수:0,응대율:0},
+ {ch:"SPOTV G&H (SVC)",인입콜:3,응대콜:1,정기건수:1,정기금액:20000,유효일수:2,응대율:33.3},
+ {ch:"JTBC2 (SVC)",인입콜:1,응대콜:1,정기건수:0,정기금액:0,유효일수:1,응대율:100},
+ {ch:"기타 TV채널",인입콜:5,응대콜:1,정기건수:0,정기금액:0,유효일수:2,응대율:20}
+],material:[
+ {name:"식사지원 은영이ver2",정기건수:8,인입콜:12,응대콜:9,ROI:0.57,CPR:296954,CPA:419229,응대율:75,광고비:3563446,정기금액:170000},
+ {name:"식사지원 지영이",정기건수:3,인입콜:7,응대콜:3,ROI:1.72,CPR:94624,CPA:139445,응대율:42.9,광고비:662365,정기금액:95000},
+ {name:"식사지원 준우_셰프",정기건수:4,인입콜:7,응대콜:7,ROI:1.82,CPR:75461,CPA:132057,응대율:100,광고비:528227,정기금액:80000},
+ {name:"식사지원 사랑이",정기건수:2,인입콜:4,응대콜:3,ROI:0.55,CPR:217994,CPA:435988,응대율:75,광고비:871977,정기금액:40000},
+ {name:"가족돌봄 지수",정기건수:1,인입콜:3,응대콜:2,ROI:0.34,CPR:234482,CPA:703446,응대율:66.7,광고비:703446,정기금액:20000},
+ {name:"뇌병변 무준이ver2",정기건수:1,인입콜:4,응대콜:3,ROI:0.45,CPR:132057,CPA:528227,응대율:75,광고비:528227,정기금액:20000},
+ {name:"가족돌봄 선우",정기건수:0,인입콜:1,응대콜:1,ROI:0,CPR:528227,CPA:0,응대율:100,광고비:528227,정기금액:0},
+ {name:"가족돌봄 지수ver2",정기건수:0,인입콜:4,응대콜:4,ROI:0,CPR:105181,CPA:0,응대율:100,광고비:420723,정기금액:0}
+],kpi:{총광고비:7806638,총인입콜:56,총정기건수:19,총정기금액:425000,ROI:0.65,CPR:139404,CPA:367371,평균응대율:62.5}}};
+let DAILY,CHANNEL,OTHER,MATERIAL,KPI;
+const COLORS=["#6366f1","#22c55e","#f59e0b","#ef4444","#06b6d4","#a855f7","#f97316","#14b8a6","#ec4899","#84cc16"];
+
+// ────────── 유틸 ──────────
+const fmtW=n=>n==null?"-":"₩"+n.toLocaleString();
+const fmtM=n=>n==null?"-":"₩"+(n/1000000).toFixed(2)+"M";
+const fmtK=n=>n==null?"-":"₩"+Math.round(n/10000)+"만";
+const fmtJm=n=>n==null?"-":"₩"+(n/10000).toFixed(1)+"만";
+const roiColor=v=>v>=1.0?"chip chip-green":v>=0.6?"chip chip-blue":v>=0.3?"chip chip-amber":"chip chip-red";
+
+// ────────── SVG 차트 함수 ──────────
+function svgEl(tag,attrs,children=""){
+  const a=Object.entries(attrs).map(([k,v])=>`${k}="${v}"`).join(" ");
+  return `<${tag} ${a}>${children}</${tag}>`;
+}
+
+function barLineChart(data,{width=680,height=220,barKey,lineKey,barLabel,lineLabel,barColor="#6366f1",lineColor="#22c55e",lineMax,xKey="date",rotateLabels=false,xLabelFontSize=10,xTickFn=null,rotateBottom=90}={}){
+  const P={top:28,right:56,bottom:rotateLabels?rotateBottom:28,left:52};
+  const W=width-P.left-P.right, H=height-P.top-P.bottom;
+  const barMax=Math.max(...data.map(d=>d[barKey]||0))*1.15;
+  const lMax=lineMax||Math.max(...data.map(d=>d[lineKey]||0))*1.15||1;
+  const bw=Math.min(40,Math.max(4,W/data.length*0.6));
+  let bars="",lines="",dots="",xLabels="",yLeft="",yRight="";
+  data.forEach((d,i)=>{
+    const x=P.left+i*(W/data.length)+W/data.length/2;
+    const bv=d[barKey]||0, lv=d[lineKey];
+    const bh=(bv/barMax)*H;
+    bars+=svgEl("rect",{x:x-bw/2,y:P.top+H-bh,width:bw,height:bh,fill:barColor,rx:2,opacity:.85,
+      "data-tip":`${d[xKey]}: ${barLabel} ${bv}`});
+    if(lv!=null){
+      const ly=P.top+H-(lv/lMax)*H;
+      if(i>0&&data[i-1][lineKey]!=null){
+        const px=P.left+(i-1)*(W/data.length)+W/data.length/2;
+        const py=P.top+H-(data[i-1][lineKey]/lMax)*H;
+        lines+=svgEl("line",{x1:px,y1:py,x2:x,y2:ly,stroke:lineColor,"stroke-width":2});
+      }
+      dots+=svgEl("circle",{cx:x,cy:ly,r:3,fill:lineColor,"data-tip":`${d[xKey]}: ${lineLabel} ${lv}`});
+    }
+    if(rotateLabels){
+      const ty=P.top+H+8;
+      xLabels+=`<text x="${x}" y="${ty}" text-anchor="end" font-size="${xLabelFontSize}" fill="#64748b" transform="rotate(-40,${x},${ty})">${d[xKey]}</text>`;
+    } else {
+      const showTick=xTickFn?xTickFn(d,i,data):(i%4===0||i===data.length-1);
+      if(showTick) xLabels+=svgEl("text",{x,y:height-6,"text-anchor":"middle","font-size":9,fill:"#94a3b8"},d[xKey]);
+    }
+  });
+  // Y축 눈금
+  for(let t=0;t<=4;t++){
+    const y=P.top+H*(1-t/4);
+    const v=Math.round(barMax*t/4);
+    yLeft+=svgEl("text",{x:P.left-6,y:y+3,"text-anchor":"end","font-size":9,fill:"#94a3b8"},v>999?Math.round(v/10000)+"만":v);
+    yLeft+=svgEl("line",{x1:P.left,y1:y,x2:P.left+W,y2:y,stroke:"#f3f4f6","stroke-width":1});
+    const rv=(lMax*t/4).toFixed(2);
+    yRight+=svgEl("text",{x:P.left+W+6,y:y+3,"text-anchor":"start","font-size":9,fill:lineColor},rv);
+  }
+  const legend=`<g transform="translate(${width/2-63},${P.top-12})">
+    <rect x="0" y="-8" width="10" height="10" fill="${barColor}" rx="2"/><text x="14" y="1" font-size="10" fill="#374151">${barLabel}</text>
+    <line x1="82" y1="-3" x2="94" y2="-3" stroke="${lineColor}" stroke-width="2"/><circle cx="88" cy="-3" r="3" fill="${lineColor}"/>
+    <text x="98" y="1" font-size="10" fill="#374151">${lineLabel}</text>
+  </g>`;
+  return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto">${yLeft}${yRight}${bars}${lines}${dots}${xLabels}${legend}</svg>`;
+}
+
+function areaChart(data,{width=340,height=180,key,label,color="#6366f1",unit="",xKey="date",yFmt=v=>v,showLabel=true,xTickFn=null}={}){
+  const P={top:16,right:16,bottom:24,left:52};
+  const W=width-P.left-P.right,H=height-P.top-P.bottom;
+  const vals=data.map(d=>d[key]||0);
+  const mx=Math.max(...vals)*1.15||1;
+  const xStep=data.length>1?W/(data.length-1):0;
+  const pts=data.map((d,i)=>{
+    const x=data.length===1?P.left+W/2:P.left+i*xStep;
+    const y=P.top+H-(((d[key]||0)/mx)*H);
+    return `${x},${y}`;
+  });
+  const areaPath=`M ${pts[0]} L ${pts.join(" L ")} L ${P.left+W},${P.top+H} L ${P.left},${P.top+H} Z`;
+  const linePath=`M ${pts[0]} L ${pts.join(" L ")}`;
+  let xLbls="",yLbls="",dots="";
+  data.forEach((d,i)=>{
+    const showATick=xTickFn?xTickFn(d,i,data):(i%4===0||i===data.length-1);
+    const cx=data.length===1?P.left+W/2:P.left+i*xStep;
+    if(showATick) xLbls+=svgEl("text",{x:cx,y:height-6,"text-anchor":"middle","font-size":9,fill:"#94a3b8"},d[xKey]);
+    const cy=P.top+H-(((d[key]||0)/mx)*H);
+    dots+=svgEl("circle",{cx,cy,r:4,fill:color,stroke:"#fff","stroke-width":1.5,style:"cursor:pointer","data-tip":`${d[xKey]}\n${label}: ${yFmt(d[key]||0)}`});
+  });
+  for(let t=0;t<=3;t++){
+    const y=P.top+H*(1-t/3);
+    const v=mx*t/3;
+    yLbls+=svgEl("text",{x:P.left-5,y:y+3,"text-anchor":"end","font-size":9,fill:"#94a3b8"},yFmt(v));
+    yLbls+=svgEl("line",{x1:P.left,y1:y,x2:P.left+W,y2:y,stroke:"#f3f4f6","stroke-width":1});
+  }
+  const lid=`grad_${key}`;
+  return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto">
+    <defs><linearGradient id="${lid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity=".25"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    ${yLbls}<path d="${areaPath}" fill="url(#${lid})"/><path d="${linePath}" fill="none" stroke="${color}" stroke-width="2"/>
+    ${dots}${xLbls}
+    ${showLabel?`<text x="${P.left}" y="${P.top-3}" font-size="10" fill="#374151">${label}</text>`:""}
+  </svg>`;
+}
+
+function hBarChart(data,{width=520,height=280,key,label,color="#6366f1",fmtFn=v=>v,nameKey="ch",fontSize=9,barRatio=0.45}={}){
+  const P={top:10,right:80,bottom:10,left:80};
+  const W=width-P.left-P.right,H=height-P.top-P.bottom;
+  const bh=Math.max(7,H/data.length*barRatio);
+  const mx=Math.max(...data.map(d=>d[key]||0))*1.1||1;
+  let bars="";
+  data.forEach((d,i)=>{
+    const y=P.top+i*(H/data.length)+(H/data.length-bh)/2;
+    const bw=(d[key]||0)/mx*W;
+    const ci=CHANNEL.findIndex(c=>c.ch===d[nameKey])||i;
+    const col=Array.isArray(color)?COLORS[i%COLORS.length]:color;
+    bars+=svgEl("rect",{x:P.left,y,width:Math.max(0,bw),height:bh,fill:col,rx:3,style:"cursor:pointer","data-tip":`${d[nameKey]}\n${label}: ${fmtFn(d[key])}`});
+    bars+=svgEl("text",{x:P.left-5,y:y+bh/2+4,"text-anchor":"end","font-size":fontSize,fill:"#374151"},d[nameKey]);
+    bars+=svgEl("text",{x:P.left+bw+5,y:y+bh/2+4,"font-size":fontSize,fill:"#374151"},fmtFn(d[key]));
+  });
+  return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto">${bars}</svg>`;
+}
+
+function pieChart(data,{width=320,height=280,valueKey,nameKey,r=96,fmtFn=v=>v.toLocaleString(),colorFn=null}={}){
+  const cx=width/2,cy=height/2;
+  const total=data.reduce((s,d)=>s+(d[valueKey]||0),0);
+  let angle=-Math.PI/2,slices="",labels="";
+  data.forEach((d,i)=>{
+    const v=d[valueKey]||0;
+    const a=(v/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+a),y2=cy+r*Math.sin(angle+a);
+    const large=a>Math.PI?1:0;
+    const pct=(v/total*100).toFixed(1);
+    const col=colorFn?colorFn(d,i):COLORS[i%COLORS.length];
+    slices+=svgEl("path",{d:`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`,fill:col,stroke:"#fff","stroke-width":2,style:"cursor:pointer","data-tip":`${d[nameKey]}\n${fmtFn(v)} (${pct}%)`});
+    const midA=angle+a/2,lx=cx+(r*0.65)*Math.cos(midA),ly=cy+(r*0.65)*Math.sin(midA);
+    if(v/total>0.06) labels+=svgEl("text",{x:lx,y:ly,"text-anchor":"middle","dominant-baseline":"central","font-size":16,"font-weight":600,fill:"#fff"},`${Math.round(v/total*100)}%`);
+    angle+=a;
+  });
+  return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto">${slices}${labels}</svg>`;
+}
+
+// ────────── 탭 렌더 ──────────
+function chipRoi(v){if(v==null)return"-";const c=v>=1.0?"chip-green":v>=0.6?"chip-blue":v>=0.3?"chip-amber":"chip-red";return`<span class="chip ${c}">${v}</span>`;}
+function chipPct(v,hi=70,mid=60){if(v==null)return"-";const c=v>=hi?"c-green":v>=mid?"c-amber":"c-red";return`<span class="${c}" style="font-weight:600">${v}%</span>`;}
+
+function renderOverview(){
+  const totalAd=(KPI.총광고비/100000000).toFixed(2);
+  const dateRange=`${DAILY[0]?.date||""}~${DAILY[DAILY.length-1]?.date||""}`;
+  const kpis=[
+    {label:"총 광고비",value:`₩${totalAd}억`,sub:`유료 매체 합산 (${dateRange})`,cls:"c-indigo",icon:"💸"},
+    {label:"총 정기금액",value:`₩${(KPI.총정기금액/10000).toFixed(1)}만`,sub:"SVC 채널 포함",cls:"c-purple",icon:"💜",formula:"정기후원 월 납입금액 합산"},
+    {label:"ROI",value:KPI.ROI,sub:"정기금액×12÷광고비",cls:"c-green",icon:"📈",formula:"정기금액×12÷광고비"},
+    {label:"CPR",value:fmtW(KPI.CPR),sub:"콜 1건당 광고비",cls:"c-amber",icon:"📣",formula:"광고비÷인입콜"},
+  ];
+  const kpiHtml=`<div class="grid4">${kpis.map(k=>`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span class="kpi-label">${k.label}</span><span style="font-size:16px">${k.icon}</span>
+    </div>
+    <div class="kpi-value ${k.cls}">${k.value}</div>
+    <div class="kpi-sub">${k.sub}</div>
+    ${k.formula?`<div class="kpi-formula">${k.formula}</div>`:""}
+  </div>`).join("")}</div>`;
+
+  const chart1=`<div class="card" style="margin-bottom:16px">
+    <div class="section-title">📈 일별 정기건수 &amp; ROI 추이</div>
+    <div class="section-sub">날짜별 광고비 대비 정기후원 성과</div>
+    <div class="chart-wrap">${barLineChart(DAILY,{barKey:"정기건수",lineKey:"ROI",barLabel:"정기건수",lineLabel:"ROI",xTickFn:(d)=>{const day=parseInt(d.date.split('/')[1]);return day===1||day%5===0;}})}</div>
+  </div>`;
+
+  const chart2=`<div class="grid2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="section-title">📈 일별 ROI 추이</div>
+      <div class="section-sub">정기금액×12÷광고비 (높을수록 효율적)</div>
+      <div class="chart-wrap">${areaChart(DAILY,{key:"ROI",label:"ROI",color:"#22c55e",yFmt:v=>v.toFixed(2),showLabel:false,xTickFn:(d)=>{const day=parseInt(d.date.split('/')[1]);return day===1||day%5===0;}})}</div>
+    </div>
+    <div class="card">
+      <div class="section-title">📡 매체별 ROI</div>
+      <div class="section-sub">정기금액×12÷광고비</div>
+      <div class="chart-wrap">${hBarChart([...CHANNEL].sort((a,b)=>b.ROI-a.ROI),{key:"ROI",label:"ROI",color:true,fmtFn:v=>v.toFixed(2)})}</div>
+    </div>
+  </div>`;
+
+  const chJmSorted=[...CHANNEL].filter(c=>c.정기금액>0).sort((a,b)=>b.정기금액-a.정기금액);
+  const chAdSorted=[...CHANNEL].sort((a,b)=>b.광고비-a.광고비);
+  const chColorOf=ch=>{const idx=CHANNEL.findIndex(c=>c.ch===ch);return COLORS[idx>=0?idx%COLORS.length:0];};
+  const chart3=`<div class="grid2">
+    <div class="card">
+      <div class="section-title">📡 매체별 정기금액 비중</div>
+      <div class="section-sub">매체별 정기후원 금액 기준 (내림차순)</div>
+      <div class="chart-wrap" style="display:flex;align-items:center">
+        <div style="width:320px;flex-shrink:0">${pieChart(chJmSorted,{valueKey:"정기금액",nameKey:"ch",fmtFn:fmtJm,colorFn:d=>chColorOf(d.ch)})}</div>
+        <div style="margin-left:auto;margin-right:12px;font-size:12px;line-height:1.9;white-space:nowrap">${chJmSorted.map(c=>`<div><span style="display:inline-block;width:9px;height:9px;background:${chColorOf(c.ch)};border-radius:2px;margin-right:5px"></span>${c.ch}: ${(c.정기금액/10000).toFixed(1)}만</div>`).join("")}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">💸 매체별 예산(광고비) 비중</div>
+      <div class="section-sub">채널별 광고비 기준 (내림차순)</div>
+      <div class="chart-wrap" style="display:flex;align-items:center">
+        <div style="width:320px;flex-shrink:0">${pieChart(chAdSorted,{valueKey:"광고비",nameKey:"ch",fmtFn:fmtK,colorFn:d=>chColorOf(d.ch)})}</div>
+        <div style="margin-left:auto;margin-right:12px;font-size:12px;line-height:1.9;white-space:nowrap">${chAdSorted.map(c=>`<div><span style="display:inline-block;width:9px;height:9px;background:${chColorOf(c.ch)};border-radius:2px;margin-right:5px"></span>${c.ch}: ${(c.광고비/10000).toFixed(1)}만</div>`).join("")}</div>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById("overview").innerHTML=kpiHtml+chart1+chart2+chart3;
+}
+
+function renderDaily(){
+  const chart=`<div class="card" style="margin-bottom:16px">
+    <div class="section-title">📞 콜 &amp; 전환 추이</div>
+    <div class="section-sub">인입콜·응대콜·정기건수</div>
+    <div class="chart-wrap">${barLineChart(DAILY,{barKey:"인입콜",lineKey:"정기건수",barLabel:"인입콜",lineLabel:"정기건수",barColor:"#c7d2fe",lineColor:"#ef4444"})}</div>
+  </div>`;
+  const a1=`<div class="card">
+    <div class="section-title">🔄 일별 정기전환율</div>
+    <div class="section-sub">정기건수÷인입콜×100</div>
+    <div class="chart-wrap">${areaChart(DAILY,{key:"전환율",label:"전환율(%)",color:"#f59e0b",yFmt:v=>`${v.toFixed(0)}%`})}</div>
+  </div>`;
+  const a2=`<div class="card">
+    <div class="section-title">📲 일별 응대율</div>
+    <div class="section-sub">응대콜÷인입콜×100</div>
+    <div class="chart-wrap">${areaChart(DAILY,{key:"응대율",label:"응대율(%)",color:"#22c55e",yFmt:v=>`${v.toFixed(0)}%`})}</div>
+  </div>`;
+  const rows=DAILY.map((d,i)=>{
+    const roiC=d.ROI>=1.0?"chip-green":d.ROI>=0.6?"chip-blue":d.ROI>=0.3?"chip-amber":"chip-red";
+    return`<tr style="${i%2?"":"background:#fafafa"}">
+      <td><b>${d.date}</b></td><td style="color:#94a3b8">${d.요일}</td>
+      <td>${(d.광고비/1000000).toFixed(2)}M</td>
+      <td style="color:#2563eb;font-weight:600">${d.인입콜}</td>
+      <td>${d.응대콜}</td>
+      <td>${chipPct(d.응대율)}</td>
+      <td style="color:#4f46e5;font-weight:700">${d.정기건수}</td>
+      <td>${d.전환율}%</td>
+      <td><span class="chip ${roiC}">${d.ROI}</span></td>
+      <td style="color:#64748b">${(d.CPR/10000).toFixed(0)}만</td>
+      <td style="color:#64748b">${d.CPA>800000?"—":(d.CPA/10000).toFixed(0)+"만"}</td>
+    </tr>`;
+  }).join("");
+  const tbl=`<div class="card" style="margin-top:16px">
+    <div class="section-title" style="margin-bottom:8px">📋 일별 상세 데이터</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>날짜</th><th>요일</th><th>광고비</th><th>인입콜</th><th>응대콜</th><th>응대율</th><th>정기건수</th><th>전환율</th><th>ROI</th><th>CPR</th><th>CPA</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+  document.getElementById("daily").innerHTML=chart+`<div class="grid2">${a1}${a2}</div>`+tbl;
+}
+
+let selCh=new Set();
+let metricKey="정기건수";
+function renderChannel(){
+  const metrics=["정기건수","정기금액","CPR","ROI","응대율","콜전환율","정기전환율"];
+  const fmtMetric=(k,v)=>k==="ROI"?v.toFixed(2):k==="정기건수"?v+"건":k==="정기금액"?fmtJm(v):k==="CPR"?fmtK(v):(v+"%");
+  const filters=`<div class="card" style="margin-bottom:10px">
+    <div class="filters">
+      <span class="filter-label">매체 선택</span>
+      ${CHANNEL.map((c,i)=>`<span class="ftag ${selCh.has(c.ch)?"on":""}" style="${selCh.has(c.ch)?`background:${COLORS[i]}`:""}" onclick="toggleCh('${c.ch}',${i})">${c.ch}</span>`).join("")}
+    </div>
+  </div>`;
+  const metricBtns=`<div class="card" style="margin-bottom:10px">
+    <div class="filters">
+      <span class="filter-label">비교 지표</span>
+      ${metrics.map(m=>`<button class="metric-btn ${metricKey===m?"on":""}" onclick="setMetric('${m}')">${m}</button>`).join("")}
+    </div>
+  </div>`;
+  const active=[...CHANNEL].filter(c=>selCh.has(c.ch)).sort((a,b)=>b.ROI-a.ROI);
+  const chartData=[...active].sort((a,b)=>b[metricKey]-a[metricKey]);
+  const barH=`<div class="card" style="margin-bottom:16px">
+    <div class="section-title">📡 매체별 ${metricKey}</div>
+    <div class="chart-wrap">${hBarChart(chartData,{key:metricKey,label:metricKey,color:true,height:130,fontSize:8,barRatio:0.28,fmtFn:v=>fmtMetric(metricKey,v)})}</div>
+  </div>`;
+  const cards=`<div class="grid2" style="margin-bottom:16px">${active.map((c,i)=>{
+    const ci=CHANNEL.findIndex(x=>x.ch===c.ch);
+    const roiC=c.ROI>=1.0?"chip-green":c.ROI>=0.6?"chip-blue":c.ROI>=0.3?"chip-amber":"chip-red";
+    return`<div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="width:10px;height:10px;background:${COLORS[ci%10]};border-radius:50%;display:inline-block"></span>
+        <b style="font-size:13px">${c.ch}</b>
+        <span class="chip ${roiC}" style="margin-left:auto">ROI ${c.ROI}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        ${[["인입콜",c.인입콜+"건"],["응대율",c.응대율+"%"],["정기건수",c.정기건수+"건"],
+           ["정기금액",fmtJm(c.정기금액)],["광고비",fmtM(c.광고비)],["CPR",fmtK(c.CPR)]
+          ].map(([k,v])=>`<div style="background:#f8fafc;border-radius:8px;padding:6px">
+          <div style="font-size:10px;color:#94a3b8">${k}</div>
+          <div style="font-weight:700;font-size:12px">${v}</div>
+        </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("")}</div>`;
+  const otherRows=OTHER.map((r,i)=>`<tr style="${i%2?"":"background:#fafafa"}">
+    <td><b>${r.ch}</b></td><td>${r.유효일수}일</td>
+    <td style="color:#2563eb;font-weight:600">${r.인입콜}</td><td>${r.응대콜}</td>
+    <td>${chipPct(r.응대율,65,50)}</td>
+    <td style="color:#4f46e5;font-weight:700">${r.정기건수}</td>
+    <td>${r.정기금액>0?fmtJm(r.정기금액):"-"}</td>
+    <td style="color:#d1d5db">—</td><td style="color:#d1d5db">—</td><td style="color:#d1d5db">—</td>
+  </tr>`).join("");
+  const otherSum={ic:OTHER.reduce((s,r)=>s+r.인입콜,0),rc:OTHER.reduce((s,r)=>s+r.응대콜,0),jg:OTHER.reduce((s,r)=>s+r.정기건수,0),jm:OTHER.reduce((s,r)=>s+r.정기금액,0)};
+  const otherTbl=`<div class="card">
+    <div class="section-title" style="margin-bottom:6px">📋 SVC·기타 채널 (별도 집계)</div>
+    <div class="info-box" style="margin-bottom:8px">⚠️ 광고비 없는 채널 — ROI·CPR·CPA 산출 불가. 총 KPI(인입콜·정기건수·후원금)에는 포함됩니다.</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>채널명</th><th>유효일수</th><th>인입콜</th><th>응대콜</th><th>응대율</th><th>정기건수</th><th>정기금액</th><th>ROI</th><th>CPR</th><th>CPA</th></tr></thead>
+      <tbody>${otherRows}</tbody>
+      <tfoot><tr><td colspan="2">합계</td><td>${otherSum.ic}</td><td>${otherSum.rc}</td><td>${(otherSum.rc/otherSum.ic*100).toFixed(1)}%</td><td>${otherSum.jg}</td><td>${fmtW(otherSum.jm)}</td><td colspan="3"></td></tr></tfoot>
+    </table></div>
+  </div>`;
+  document.getElementById("channel").innerHTML=filters+metricBtns+barH+cards+otherTbl;
+}
+
+function renderMaterial(){
+  const chart=`<div class="card" style="margin-bottom:16px">
+    <div class="section-title">🎬 소재별 정기건수 &amp; ROI</div>
+    <div class="section-sub">소재별 전환 성과 비교</div>
+    <div class="chart-wrap">${barLineChart(MATERIAL,{barKey:"정기건수",lineKey:"ROI",barLabel:"정기건수",lineLabel:"ROI",lineMax:2.0,xKey:"name",rotateLabels:true,height:320,xLabelFontSize:8})}</div>
+  </div>`;
+  const sorted=[...MATERIAL].sort((a,b)=>b.ROI-a.ROI);
+  const c1=`<div class="card">
+    <div class="section-title">📈 소재별 ROI</div>
+    <div class="section-sub">높을수록 효율적</div>
+    <div class="chart-wrap">${hBarChart(sorted,{key:"ROI",label:"ROI",color:true,fmtFn:v=>v.toFixed(2),nameKey:"name"})}</div>
+  </div>`;
+  const sorted2=[...MATERIAL].filter(m=>m.CPR<500000).sort((a,b)=>a.CPR-b.CPR);
+  const c2=`<div class="card">
+    <div class="section-title">📣 소재별 CPR</div>
+    <div class="section-sub">낮을수록 효율적</div>
+    <div class="chart-wrap">${hBarChart(sorted2,{key:"CPR",label:"CPR",color:true,fmtFn:v=>fmtK(v),nameKey:"name"})}</div>
+  </div>`;
+  const rows=MATERIAL.map((m,i)=>{
+    const rc=m.ROI>=1.0?"chip-green":m.ROI>=0.6?"chip-blue":m.ROI>=0.3?"chip-amber":"chip-red";
+    return`<tr style="${i%2?"":"background:#fafafa"}">
+      <td><span style="display:inline-block;width:8px;height:8px;background:${COLORS[i%10]};border-radius:2px;margin-right:5px"></span><b>${m.name}</b></td>
+      <td style="color:#2563eb;font-weight:600">${m.인입콜}</td>
+      <td>${chipPct(m.응대율)}</td>
+      <td style="color:#4f46e5;font-weight:700">${m.정기건수}</td>
+      <td>${fmtJm(m.정기금액)}</td>
+      <td>${(m.광고비/1000000).toFixed(1)}M</td>
+      <td><span class="chip ${rc}">${m.ROI}</span></td>
+      <td>${(m.CPR/10000).toFixed(0)}만</td>
+      <td>${m.CPA>2000000?"—":(m.CPA/10000).toFixed(0)+"만"}</td>
+    </tr>`;
+  }).join("");
+  const tbl=`<div class="card" style="margin-top:16px">
+    <div class="section-title" style="margin-bottom:8px">📋 소재별 전체 성과</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>소재명</th><th>인입콜</th><th>응대율</th><th>정기건수</th><th>정기금액</th><th>광고비</th><th>ROI</th><th>CPR</th><th>CPA</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+  document.getElementById("material").innerHTML=chart+`<div class="grid2">${c1}${c2}</div>`+tbl;
+}
+
+// ────────── 탭 전환 ──────────
+function showTab(id,el){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  el.classList.add("active");
+}
+function toggleCh(ch,idx){
+  if(selCh.has(ch)){if(selCh.size>1)selCh.delete(ch);}else selCh.add(ch);
+  renderChannel();
+}
+function setMetric(k){metricKey=k;renderChannel();}
+
+// ────────── 월별 전환 ──────────
+let activeMonth="";
+function loadMonth(m){
+  const d=MONTHS_DATA[m];
+  if(!d)return;
+  activeMonth=m;
+  DAILY=d.daily;CHANNEL=d.channel;OTHER=d.other;MATERIAL=d.material;KPI=d.kpi;
+  selCh=new Set(CHANNEL.map(c=>c.ch));
+  // 헤더 날짜
+  const [y,mo]=m.split("-");
+  const first=DAILY[0]?.date||"";
+  const last=DAILY[DAILY.length-1]?.date||"";
+  document.getElementById("hdr-date").textContent=`${y}년 ${parseInt(mo)}월 (${first}~${last}) · 실제 운영 데이터`;
+  // 헤더 배지
+  document.getElementById("hdr-roi").textContent="ROI "+KPI.ROI;
+  document.getElementById("hdr-jg").textContent="정기금액 "+(KPI.총정기금액/10000).toFixed(1)+"만";
+  // 월 버튼 활성화
+  document.querySelectorAll("#month-btns .ftag").forEach(b=>{
+    b.classList.toggle("active",b.dataset.m===m);
+  });
+  renderOverview();renderChannel();renderMaterial();
+}
+
+// ────────── 초기화 ──────────
+document.getElementById("formula-bar").textContent="ROI=정기금액×12÷광고비  |  CPR=광고비÷인입콜  |  CPA=광고비÷(정기금액÷20,000)";
+// 월 버튼 생성 (내림차순: 최신 월이 위)
+const monthBtns=document.getElementById("month-btns");
+Object.keys(MONTHS_DATA).sort().forEach(m=>{
+  const [y,mo]=m.split("-");
+  const d=MONTHS_DATA[m];
+  const lastDate=d.daily[d.daily.length-1]?.date||"";
+  const lastDay=lastDate.split("/")[1]||"";
+  const btn=document.createElement("button");
+  btn.className="ftag";btn.dataset.m=m;
+  btn.innerHTML=`<span style="font-size:12px;font-weight:700">${parseInt(mo)}월</span><span style="font-size:11px;font-weight:400"> (~${lastDay}일)</span>`;
+  btn.onclick=()=>loadMonth(m);
+  monthBtns.appendChild(btn);
+});
+const latestMonth=Object.keys(MONTHS_DATA).sort().pop();
+loadMonth(latestMonth);
+// 사이드바 sticky top = 헤더 높이에 맞춤
+document.querySelector('.month-sidebar').style.top=document.querySelector('.header').offsetHeight+'px';
+
+// ────────── 툴팁 ──────────
+(function(){
+  const tip=document.createElement('div');
+  tip.id='tip';
+  document.body.appendChild(tip);
+  document.addEventListener('mouseover',e=>{
+    const t=e.target.closest('[data-tip]');
+    if(t){tip.textContent=t.getAttribute('data-tip');tip.style.opacity='1';}
+    else tip.style.opacity='0';
+  });
+  document.addEventListener('mousemove',e=>{
+    const vw=window.innerWidth,vh=window.innerHeight;
+    const tw=tip.offsetWidth+20,th=tip.offsetHeight+20;
+    tip.style.left=(e.clientX+tw>vw?e.clientX-tw+6:e.clientX+14)+'px';
+    tip.style.top=(e.clientY+th>vh?e.clientY-th+6:e.clientY-36)+'px';
+  });
+})();
+</script>
+</body>
+</html>
